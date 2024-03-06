@@ -22,28 +22,43 @@ def get_vn_versus_pt(thnSparse, pt_axis, vn_axis):
     return hist_pt_proj
 
 
-# Function to get project vn versus pt
-# Input: thnsparse, mass_axis, vn_axis
-# Output: th1d 
-def get_vn_versus_mass(thnSparse, mass_axis, vn_axis, debug=False):
+def get_vn_versus_mass(thnSparse, inv_mass_bins, mass_axis, vn_axis, debug=False):
+    '''
+    Function to get project vn versus mass
+
+    Input:
+        - thnSparse:
+            THnSparse, input THnSparse obeject (already projected in centrality and pt)
+        - inv_mass_bins:
+            list of floats, bin edges for the mass axis
+        - mass_axis:
+            int, axis number for mass
+        - vn_axis:
+            int, axis number for vn
+        - debug:
+            bool, if True, create a debug file with the projections (default: False)
+
+    Output:
+        - hist_mass_proj:
+            TH1D, histogram with vn as a function of mass
+    '''
     hist_vn_proj = thnSparse.Projection(vn_axis, mass_axis)
-    hist_vn_proj.Rebin(10)
     hist_mass_proj = thnSparse.Projection(mass_axis)
-    hist_mass_proj.Rebin(10)
     hist_mass_proj.Reset()
-    invmass_bins = np.array([1.73, 1.77, 1.8, 1.81, 1.82, 1.83, 1.84, 1.85, 1.86, 1.87, 1.88, 1.89, 1.90, 1.92, 1.94, 1.97, 2.03])
+    invmass_bins = np.array(inv_mass_bins)
     hist_mass_proj = ROOT.TH1D('hist_mass_proj', 'hist_mass_proj', len(invmass_bins)-1, invmass_bins)
     if debug:
         outfile = ROOT.TFile('debug.root', 'RECREATE')
     for i in range(hist_mass_proj.GetNbinsX()):
         bin_low = hist_vn_proj.GetXaxis().FindBin(invmass_bins[i])
         bin_high = hist_vn_proj.GetXaxis().FindBin(invmass_bins[i+1])
-        hist_sp_pt_proj = hist_vn_proj.ProjectionY(f'hist_sp_mass_proj_{bin_low}_{bin_high}', bin_low, bin_high)
-        if debug: hist_sp_pt_proj.Write()
-
-        mean_sp = hist_sp_pt_proj.GetMean()
-        mean_sp_err = hist_sp_pt_proj.GetMeanError()
-
+        profile = hist_vn_proj.ProfileY(f'profile_{i}', bin_low, bin_high)
+        mean_sp = profile.GetMean()
+        mean_sp_err = profile.GetMeanError()
+        #hist_sp_pt_proj = hist_vn_proj.ProjectionY(f'hist_sp_mass_proj_{bin_low}_{bin_high}', bin_low, bin_high)
+        #if debug: hist_sp_pt_proj.Write()
+        #mean_sp = hist_sp_pt_proj.GetMean()
+        #mean_sp_err = hist_sp_pt_proj.GetMeanError()
         hist_mass_proj.SetBinContent(i+1, mean_sp)
         hist_mass_proj.SetBinError(i+1, mean_sp_err)
     

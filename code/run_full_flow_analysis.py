@@ -7,6 +7,7 @@ import os
 
 def run_full_analysis(config,
                       an_res_file,
+                      centrality,
                       suffix,
                       doEP,
                       skip_resolution,
@@ -21,6 +22,7 @@ def run_full_analysis(config,
 
     - config (str): path of directory with config files
     - an_res_file (str): path of directory with analysis results
+    - centrality (str): centrality class
     - suffix (str): suffix for output files
     - doEP (bool): do EP resolution
     - skip_resolution (bool): skip resolution extraction
@@ -35,16 +37,17 @@ def run_full_analysis(config,
         suffix = an_res_file.split("AnalysisResults")[-1].replace(".root", "")
         suffix_withopt = f" -s {suffix}"
     if doEP:
-        outputdir = "~/scalarProd/ep"
+        outputdir = "~/flowD/ep"
     else:
-        outputdir = "~/scalarProd/sp"
+        outputdir = "~/flowD/sp"
+
 
     if not skip_resolution:
         # resolution extraction
-        outputdir_reso = f"-o {outputdir}/resolution"
-        command_reso = f"python3 compute_reso.py {config} {an_res_file} {suffix_withopt} {outputdir_reso}"
+        outputdir_reso = f"-o {outputdir}/resolution/"
+        command_reso = f"python3 compute_reso.py {an_res_file} {suffix_withopt} {outputdir_reso}"
         if doEP:
-            command_reso += " --doEP True"
+            command_reso += " --doEP"
         print("\n\033[92m Starting resolution extraction\033[0m")
         print(f"\033[92m {command_reso}\033[0m")
         os.system(command_reso)
@@ -52,10 +55,9 @@ def run_full_analysis(config,
     if not skip_projection:
         # projection
         outputdir_proj = f"-o {outputdir}/proj"
+        command_proj = f"python3 project_thnsparse.py {config} {an_res_file} {suffix_withopt} {outputdir_proj}"
         if doEP:
-            command_proj = f"python3 compute_event_plane.py {config} {an_res_file} {suffix_withopt} {outputdir_proj}"
-        else:
-            command_proj = f"python3 compute_scalar_product.py {config} {an_res_file} {suffix_withopt} {outputdir_proj}"
+            command_proj += " --doEP"
         print("\n\033[92m Starting projection\033[0m")
         print(f"\033[92m {command_proj}\033[0m")
         os.system(command_proj)
@@ -65,17 +67,19 @@ def run_full_analysis(config,
         outputdir_rawyield = f"-o {outputdir}/ry"
         proj_file = f"{outputdir}/proj/"
         if doEP:
-            proj_file += f"event_plane{suffix}.root"
+            proj_file += f"proj{suffix}.root"
             #command_rawyield = f"python3 invmass_fitter.py {config} {proj_file} {suffix_withopt} {outputdir_rawyield}"
-            command_rawyield_out = f"python3 GetRawYieldsDplusDs.py {config} k3050 {proj_file} {outputdir_rawyield} {suffix_withopt} --isOutOfPlane"
-            command_rawyield_in = f"python3 GetRawYieldsDplusDs.py {config} k3050 {proj_file} {outputdir_rawyield} {suffix_withopt} --isInPlane"
+            command_rawyield_out = f"python3 GetRawYieldsDplusDs.py {config} {centrality} {proj_file} {outputdir_rawyield} {suffix_withopt} --isOutOfPlane"
+            command_rawyield_in = f"python3 GetRawYieldsDplusDs.py {config} {centrality} {proj_file} {outputdir_rawyield} {suffix_withopt} --isInPlane"
+            command_rawyield_all = f"python3 GetRawYieldsDplusDs.py {config} {centrality} {proj_file} {outputdir_rawyield} {suffix_withopt}"
         else:
-            print("\n\033[92m The raw yield extraction is not implemented for SP\033[0m")
-            return
+            proj_file += f"proj{suffix}.root"
+            command_rawyield_all = f"python3 GetRawYieldsDplusDs.py {config} {centrality} {proj_file} {outputdir_rawyield} {suffix_withopt}"
         print("\n\033[92m Starting raw yield extraction\033[0m")
-        print(f"\033[92m {command_rawyield_in}\033[0m")
-        os.system(command_rawyield_in)
-        os.system(command_rawyield_out)
+        print(f"\033[92m {command_rawyield_all}\033[0m")
+        os.system(command_rawyield_all)
+        #os.system(command_rawyield_in)
+        #os.system(command_rawyield_out)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Arguments")
@@ -83,6 +87,8 @@ if __name__ == "__main__":
                         default="config.yaml", help="configuration file")
     parser.add_argument("an_res_file", metavar="text",
                         default="an_res.root", help="input ROOT file with anres")
+    parser.add_argument("--centrality", "-c", metavar="text",
+                        default="k3050", help="centrality class")
     parser.add_argument("--suffix", "-s", metavar="text",
                         default="", help="suffix for output files")
     parser.add_argument("--doEP", action="store_true", default=False,
@@ -98,6 +104,7 @@ if __name__ == "__main__":
     run_full_analysis(
         args.config,
         args.an_res_file,
+        args.centrality,
         args.suffix,
         args.doEP,
         args.skip_resolution,

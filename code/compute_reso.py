@@ -1,9 +1,9 @@
 import sys
 import argparse
 import ROOT
-
+sys.path.append('..')
 from utils.analysis_utils import get_resolution
-from utils.style_utils import SetObjectStyle, SetFrameStyle, kRed, kFullCircle, SetGlobalStyle
+from utils.style_utils import SetObjectStyle, SetFrameStyle, kRed, kFullCircle, SetGlobalStyle, LatLabel
 SetGlobalStyle(padleftmargin=0.15, padlebottommargin=0.25,
                padrightmargin=0.15, titleoffsety=1.1, maxdigits=3, titlesizex=0.03,
                labelsizey=0.04, setoptstat=0, setopttitle=0)
@@ -12,9 +12,9 @@ ROOT.gROOT.SetBatch(False)
 
 def compute_reso(an_res_file, doEP, doAbs, outputdir, suffix):
 
-    detA = ['FT0c', 'FT0c', 'FT0c']
-    detB = ['FT0a', 'FT0a', 'FT0a']
-    detC = ['FV0a', 'TPCpos', 'TPCneg']
+    detA = ['FT0c', 'FT0c', 'FT0c', 'FT0c']
+    detB = ['FT0a', 'FT0a', 'FT0a', 'TPCpos']
+    detC = ['FV0a', 'TPCpos', 'TPCneg', 'TPCneg']
 
     outfile_name = f'{outputdir}resoSP{suffix}.root' if not doEP else f'{outputdir}resoEP{suffix}.root'
     outfile_name = outfile_name.replace('.root', '_abs.root') if doAbs else outfile_name
@@ -61,6 +61,12 @@ def compute_reso(an_res_file, doEP, doAbs, outputdir, suffix):
                           ymaxdigits=5,)
             hist_det.Draw('same colz')
             hist_mean.Draw('same pl')
+            if i == 0:
+                LatLabel(f'A: {det_a}, B: {det_b}', 0.2, 0.85, 0.05)
+            elif i == 1:
+                LatLabel(f'A: {det_a}, B: {det_c}', 0.2, 0.85, 0.05)
+            elif i == 2:
+                LatLabel(f'A: {det_b}, B: {det_c}', 0.2, 0.85, 0.05)
             canvas.Write()
             hist_mean.Write()
             hist_det.Write()
