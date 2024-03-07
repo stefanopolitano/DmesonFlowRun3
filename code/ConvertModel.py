@@ -22,5 +22,5 @@ model_onnx = model_converter.convert_model_onnx(1, args.nfeatures) # convert the
 
 outFileName = ModelPath.replace('.pkl', '.onnx')
 
-model_converter.dump_model_onnx(model_onnx, outFileName) # save the model to a file
+model_converter.dump_model_onnx(model_onnx) # save the model to a file
 print(f'Saved model: {outFileName}')
